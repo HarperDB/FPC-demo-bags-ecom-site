@@ -6,6 +6,8 @@ var moment = require("moment");
 
 // GET: display all products
 router.get("/", async (req, res) => {
+
+  console.log("-------ALL PRODUCTS HIT-------")
   const successMsg = req.flash("success")[0];
   const errorMsg = req.flash("error")[0];
   const perPage = 8;
@@ -37,6 +39,8 @@ router.get("/", async (req, res) => {
 
 // GET: search box
 router.get("/search", async (req, res) => {
+
+  console.log("-------SEARCH BOX HIT-------")
   const perPage = 8;
   let page = parseInt(req.query.page) || 1;
   const successMsg = req.flash("success")[0];
@@ -72,6 +76,10 @@ router.get("/search", async (req, res) => {
 
 //GET: get a certain category by its slug (this is used for the categories navbar)
 router.get("/:slug", async (req, res) => {
+
+  console.log("-------CATEGORY BY SLUG HIT-------")
+
+  // TODO: This is hit when we call a catergory
   const successMsg = req.flash("success")[0];
   const errorMsg = req.flash("error")[0];
   const perPage = 8;
@@ -105,13 +113,62 @@ router.get("/:slug", async (req, res) => {
 
 // GET: display a certain product by its id
 router.get("/:slug/:id", async (req, res) => {
+
+  console.log("-------PRODUCT BY ID HIT-------")
+
+  // TODO: EDIT THIS CODE
   const successMsg = req.flash("success")[0];
   const errorMsg = req.flash("error")[0];
   try {
-    const product = await Product.findById(req.params.id).populate("category");
+    //const product = await Product.findById(req.params.id).populate("category");
+    
+    const product = await fetch(`http://localhost:9926/PageCache/backpacks?id=${req.params.id}`,
+
+      {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache,' 
+          //no-store, must-revalidate',  // Prevents caching
+          //'Pragma': 'no-cache',                                     // HTTP/1.0 compatibility
+          // 'Expires': '0'                                            // Forces immediate expiration
+        }}
+    );
+
+    
+    let productToJson = await product.json();
+    
+    let cachedresponse = productToJson.cachedData;
+
+    console.log("CACHED RESPONSE",productToJson.statusCode);
+
+    if (productToJson.statusCode ===  304) {
+      console.log("CACHE HIT")
+      res.setHeader('X-Cache-Status-HDB', "cache-hit");
+      res.setHeader('Latency-cache-hit', productToJson.latency);
+      res.status(304)
+
+    }
+
+    if (productToJson.statusCode ===  200) {
+      console.log("CACHE MISS")
+      res.setHeader('X-Cache-Status-HDB', "cache-miss");
+      res.setHeader('Latency-cache-missed', productToJson.latency);
+      
+      res.status(200)
+
+    }
+   
+    //cachedData;
+    
+    //const cacheStatus = product.headers.get('X-Cache-Status');
+
+    // console.log("CACHE RESPONSE",product.headers);
+
+    // res.setHeader('X-Cache-Status', cacheStatus);
+
     res.render("shop/product", {
-      pageName: product.title,
-      product,
+      pageName: cachedresponse.title,
+      cachedresponse,
       successMsg,
       errorMsg,
       moment: moment,
