@@ -114,9 +114,7 @@ router.get("/:slug", async (req, res) => {
 // GET: display a certain product by its id
 router.get("/:slug/:id", async (req, res) => {
 
-  console.log("-------PRODUCT BY ID HIT-------")
-
-  // TODO: EDIT THIS CODE
+ 
   const successMsg = req.flash("success")[0];
   const errorMsg = req.flash("error")[0];
   try {
